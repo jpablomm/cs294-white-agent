@@ -1,4 +1,12 @@
+#!/usr/bin/env python3
+"""
+White Agent - A2A Protocol Server for OSWorld Desktop Automation
+
+Uses PromptAgent for multi-model support (GPT-4V, Claude, Gemini, Qwen).
+"""
+
 import argparse
+import os
 import uvicorn
 
 from a2a.server.apps import A2AStarletteApplication
@@ -10,40 +18,50 @@ from a2a.types import (
     AgentSkill,
 )
 
-from executor import Executor
+from white_agent.a2a.server import PromptAgentExecutor
+
+# Configuration from environment
+MODEL = os.environ.get("MODEL", "gpt-4o")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Run the A2A agent.")
-    parser.add_argument("--host", type=str, default="127.0.0.1", help="Host to bind the server")
+    parser = argparse.ArgumentParser(description="Run the White Agent A2A server.")
+    parser.add_argument("--host", type=str, default="0.0.0.0", help="Host to bind the server")
     parser.add_argument("--port", type=int, default=9009, help="Port to bind the server")
     parser.add_argument("--card-url", type=str, help="URL to advertise in the agent card")
     args = parser.parse_args()
 
-    # Fill in your agent card
-    # See: https://a2a-protocol.org/latest/tutorials/python/3-agent-skills-and-card/
-    
-    skill = AgentSkill(
-        id="",
-        name="",
-        description="",
-        tags=[],
-        examples=[]
-    )
+    skills = [
+        AgentSkill(
+            id="desktop-automation",
+            name="Desktop Automation",
+            description=f"Execute desktop automation actions (click, type, hotkey, scroll) using {MODEL}",
+            tags=["automation", "desktop", "gui", "osworld"],
+            examples=[],
+        ),
+        AgentSkill(
+            id="vision-reasoning",
+            name="Vision-Language Reasoning",
+            description=f"Analyze screenshots and determine appropriate actions using {MODEL}",
+            tags=["vision", "reasoning", "screenshot"],
+            examples=[],
+        ),
+    ]
 
     agent_card = AgentCard(
-        name="",
-        description="",
+        name="osworld-white-agent",
+        description=f"White agent for executing desktop automation tasks using {MODEL}. "
+                    "Receives observations (screenshots, instructions) and returns actions.",
         url=args.card_url or f"http://{args.host}:{args.port}/",
         version='1.0.0',
-        default_input_modes=['text'],
-        default_output_modes=['text'],
+        default_input_modes=['application/json'],
+        default_output_modes=['application/json'],
         capabilities=AgentCapabilities(streaming=True),
-        skills=[skill]
+        skills=skills
     )
 
     request_handler = DefaultRequestHandler(
-        agent_executor=Executor(),
+        agent_executor=PromptAgentExecutor(),
         task_store=InMemoryTaskStore(),
     )
     server = A2AStarletteApplication(
