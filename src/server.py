@@ -18,7 +18,12 @@ def main():
     parser = argparse.ArgumentParser(description="Run the White Agent A2A server.")
     parser.add_argument("--host", type=str, default="0.0.0.0", help="Host to bind the server")
     parser.add_argument("--port", type=int, default=9009, help="Port to bind the server")
+    parser.add_argument("--card-url", type=str, help="URL to advertise in the agent card (ignored, set via env)")
     args = parser.parse_args()
+
+    # Set AGENT_URL environment variable if --card-url provided
+    if args.card_url:
+        os.environ["AGENT_URL"] = args.card_url
 
     # Create the app with A2A + /decide endpoint support
     app = create_app()
